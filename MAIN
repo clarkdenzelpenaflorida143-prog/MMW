@@ -1,0 +1,365 @@
+from pathlib import Path
+
+html = r'''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Money Moves | Student Budget Monopoly</title>
+<style>
+  :root{
+    --ink:#18291f;--green:#164b35;--green2:#216747;--cream:#fff8e7;
+    --gold:#f3c969;--red:#bd4339;--paper:#fffdf5;--muted:#6e786f;
+    --shadow:0 14px 34px rgba(12,39,25,.13);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#f1ead7;color:var(--ink);font-family:Inter,Segoe UI,Arial,sans-serif}
+  button,input,select{font:inherit}
+  button{cursor:pointer}
+  .topbar{background:var(--green);color:white;padding:22px clamp(16px,4vw,48px);display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:5px solid var(--gold)}
+  .brand{display:flex;align-items:center;gap:13px}
+  .brand-mark{width:48px;height:48px;border:2px solid var(--gold);border-radius:50%;display:grid;place-items:center;font-size:25px;color:var(--gold);font-weight:900}
+  .brand h1{font-family:Georgia,serif;font-size:clamp(22px,3vw,34px);margin:0;letter-spacing:.3px}
+  .brand p{margin:4px 0 0;color:#d8e7dc;font-size:12px;letter-spacing:2px;text-transform:uppercase}
+  .top-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:0;border-radius:10px;padding:11px 15px;font-weight:800;transition:.15s;box-shadow:0 3px 0 rgba(0,0,0,.12)}
+  .btn:hover{transform:translateY(-1px)}.btn:active{transform:translateY(2px);box-shadow:none}
+  .btn-gold{background:var(--gold);color:#2c311f}.btn-light{background:#fffdf5;color:var(--green)}.btn-dark{background:var(--green);color:white}.btn-red{background:var(--red);color:white}
+  .wrap{max-width:1500px;margin:auto;padding:24px clamp(12px,2vw,28px) 44px}
+  .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-bottom:20px}
+  .panel{background:var(--paper);border:1px solid #e4dcc8;border-radius:18px;box-shadow:var(--shadow);padding:22px}
+  .eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:900;color:var(--green2)}
+  h2{font-family:Georgia,serif;margin:7px 0 10px;font-size:27px}
+  .sub{color:var(--muted);line-height:1.55;margin:0}
+  .budget-panel{background:linear-gradient(135deg,#174a34,#0e3526);color:white;position:relative;overflow:hidden}
+  .budget-panel:after{content:"₱";position:absolute;right:14px;bottom:-50px;font-size:210px;font-family:Georgia,serif;color:rgba(255,255,255,.055);font-weight:bold}
+  .budget-panel .eyebrow{color:var(--gold)}.budget-amount{font-family:Georgia,serif;font-size:clamp(38px,5vw,62px);font-weight:bold;letter-spacing:-1px;margin:8px 0}
+  .budget-caption{font-size:13px;color:#d4e5d9}
+  .budget-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;position:relative;z-index:1}
+  .mini-stat{border:1px solid #ffffff35;background:#ffffff0c;padding:10px 12px;border-radius:10px;min-width:105px}
+  .mini-stat small{display:block;color:#cfe0d4;font-size:11px;margin-bottom:5px}.mini-stat strong{font-size:17px}
+  .layout{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(390px,.88fr);gap:20px;align-items:start}
+  .section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+  .section-head h2{margin:0;font-size:24px}
+  .pill{border-radius:999px;padding:6px 10px;background:#e9f1e9;color:var(--green);font-size:11px;font-weight:900;letter-spacing:.7px;text-transform:uppercase}
+  .board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .tile{min-height:116px;border:2px solid #d9d0ba;border-radius:14px;padding:12px;background:#fffaf0;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+  .tile:before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--tile-color,#43815d)}
+  .tile .emoji{font-size:25px}.tile .tile-name{font-weight:900;font-size:13px;line-height:1.25;text-transform:uppercase;padding-left:2px}
+  .tile .tile-note{font-size:10px;color:var(--muted);margin-top:7px}
+  .tile.start{--tile-color:#d9a72c;background:#fff2c8}.tile.food{--tile-color:#e28c44}.tile.home{--tile-color:#5489b5}.tile.drink{--tile-color:#48a8b0}.tile.gala{--tile-color:#9a70ba}.tile.school{--tile-color:#cb665d}.tile.treasure{--tile-color:#d9a72c;background:#fff4d1}.tile.step{--tile-color:#7b827c;background:#f1f1eb}
+  .tile.active{outline:4px solid var(--gold);box-shadow:0 0 0 7px #f3c96944;transform:translateY(-2px)}
+  .tile-index{position:absolute;right:9px;top:8px;color:#a49a83;font-size:10px;font-weight:800}
+  .board-legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--c)}
+  .control-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+  label{display:block;font-size:12px;font-weight:800;margin-bottom:7px;color:#455348}
+  input,select{width:100%;border:1px solid #d9d2c0;background:white;border-radius:10px;padding:12px;color:var(--ink);outline:none}
+  input:focus,select:focus{border-color:#43815d;box-shadow:0 0 0 3px #43815d22}
+  .dice-row{display:flex;gap:9px;align-items:center;margin:15px 0}
+  .die{width:48px;height:48px;background:white;border:2px solid #d9d0ba;border-radius:12px;display:grid;place-items:center;font-size:29px;color:var(--green);box-shadow:0 4px 0 #ded4bf}
+  .roll-total{font-size:13px;color:var(--muted);margin-left:5px}
+  .control-buttons{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.control-buttons .btn{flex:1}
+  .notice{margin-top:13px;border-radius:11px;background:#f3efdf;padding:12px;font-size:12px;line-height:1.5;color:#5e685f}
+  .right-column{display:grid;gap:18px}
+  .transaction-form{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .transaction-form .wide{grid-column:1/-1}
+  .money-input{position:relative}.money-input span{position:absolute;left:12px;top:12px;color:#6f786d;font-weight:800}.money-input input{padding-left:30px}
+  .ledger{max-height:360px;overflow:auto;display:grid;gap:9px;margin-top:12px}
+  .ledger-item{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:12px;border:1px solid #e9e1d0;background:white;border-radius:12px;animation:slideIn .35s ease both}
+  .ledger-item .who{font-weight:900;font-size:13px}.ledger-item .detail{font-size:11px;color:var(--muted);margin-top:4px}
+  .ledger-item .amt{font-weight:900;color:var(--red);white-space:nowrap}.ledger-item.bonus .amt{color:#247b4c}
+  .empty{padding:25px 12px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed #d7cfbd;border-radius:12px}
+  .table-wrap{overflow:auto;border:1px solid #e7dfce;border-radius:12px}
+  table{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap;background:white}
+  th{background:var(--green);color:white;text-align:left;padding:11px 12px;position:sticky;top:0}
+  td{padding:10px 12px;border-bottom:1px solid #eee8dc}
+  tbody tr:nth-child(even){background:#fbf8ef}tfoot td{font-weight:900;background:#f1e8d1}
+  .table-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .small-muted{font-size:11px;color:var(--muted);line-height:1.5}
+  .toast{position:fixed;left:50%;bottom:25px;transform:translate(-50%,30px);opacity:0;pointer-events:none;z-index:20;background:#163f2c;color:white;padding:14px 20px;border-radius:13px;box-shadow:0 10px 30px #0003;font-weight:800;transition:.3s;text-align:center;max-width:90vw}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .modal-backdrop{position:fixed;inset:0;background:#0d241bcc;display:none;place-items:center;padding:18px;z-index:30}
+  .modal-backdrop.show{display:grid}
+  .modal{background:#fffdf5;border:4px solid var(--gold);border-radius:22px;padding:26px;width:min(520px,100%);text-align:center;box-shadow:0 25px 80px #0005;animation:pop .35s ease}
+  .modal .big-icon{font-size:50px}.modal h2{font-size:30px}.modal .revealed-amount{font-size:48px;color:var(--red);font-family:Georgia,serif;font-weight:bold;margin:12px 0}
+  .modal p{color:var(--muted);line-height:1.5}
+  .confetti{position:fixed;top:-20px;width:9px;height:14px;z-index:40;pointer-events:none;animation:fall 2.5s linear forwards}
+  .footer{text-align:center;font-size:11px;color:#7d806f;padding:25px 10px 0}
+  @keyframes slideIn{from{opacity:0;transform:translateX(15px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+  @keyframes fall{to{transform:translateY(110vh) rotate(700deg);opacity:.9}}
+  @media(max-width:1000px){.layout{grid-template-columns:1fr}.hero{grid-template-columns:1fr 1fr}}
+  @media(max-width:650px){.hero{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}.board{gap:7px}.tile{min-height:104px;padding:10px}.tile .tile-name{font-size:11px}.panel{padding:16px}.control-grid{grid-template-columns:1fr}.transaction-form{grid-template-columns:1fr}.transaction-form .wide{grid-column:auto}.budget-amount{font-size:44px}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">₱</div>
+    <div><h1>Money Moves</h1><p>Student Budget Monopoly</p></div>
+  </div>
+  <div class="top-actions">
+    <button class="btn btn-light" id="soundToggle">🔊 Sound on</button>
+    <button class="btn btn-gold" id="exportBtn">Export CSV ↓</button>
+    <button class="btn btn-light" id="resetBtn">Reset game ↻</button>
+  </div>
+</header>
+<main class="wrap">
+  <section class="hero">
+    <div class="panel">
+      <div class="eyebrow">The challenge</div>
+      <h2>Make every peso count.</h2>
+      <p class="sub">Track every student's expenses as your team moves through a school day. One shared budget, ₱2,600 total. Reveal an expense, update the ledger, and see where the money goes.</p>
+    </div>
+    <div class="panel budget-panel">
+      <div class="eyebrow">Shared team wallet</div>
+      <div class="budget-amount" id="balance">₱2,600</div>
+      <div class="budget-caption">Available balance · Starting budget: ₱2,600</div>
+      <div class="budget-meta">
+        <div class="mini-stat"><small>Total spent</small><strong id="spent">₱0</strong></div>
+        <div class="mini-stat"><small>Transactions</small><strong id="transactionCount">0</strong></div>
+        <div class="mini-stat"><small>Budget used</small><strong id="usedPercent">0%</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="layout">
+    <div class="left-column">
+      <div class="panel">
+        <div class="section-head"><h2>Game board</h2><span class="pill">Roll 2 dice</span></div>
+        <p class="sub">Choose the player, roll the dice, then move around your physical floor board. When a player lands on a category, record their revealed expense using the panel on the right.</p>
+        <div class="board" id="board">
+          <div class="tile start" data-category="GOING TO SCHOOL"><span class="tile-index">01</span><span class="emoji">🚌</span><div><div class="tile-name">Going to School</div><div class="tile-note">Transportation</div></div></div>
+          <div class="tile food" data-category="FOODS"><span class="tile-index">02</span><span class="emoji">🍱</span><div><div class="tile-name">Foods</div><div class="tile-note">Daily meals & snacks</div></div></div>
+          <div class="tile drink" data-category="WATER/DRINKS"><span class="tile-index">03</span><span class="emoji">🥤</span><div><div class="tile-name">Water / Drinks</div><div class="tile-note">Hydration</div></div></div>
+          <div class="tile home" data-category="GOING HOME"><span class="tile-index">04</span><span class="emoji">🏠</span><div><div class="tile-name">Going Home</div><div class="tile-note">Return fare</div></div></div>
+          <div class="tile gala" data-category="AFTER CLASS GALA"><span class="tile-index">05</span><span class="emoji">🎡</span><div><div class="tile-name">After Class Gala</div><div class="tile-note">Wants & leisure</div></div></div>
+          <div class="tile school" data-category="SCHOOL MATERIALS"><span class="tile-index">06</span><span class="emoji">✏️</span><div><div class="tile-name">School Materials</div><div class="tile-note">Supplies & projects</div></div></div>
+          <div class="tile treasure" data-category="TREASURE CHEST"><span class="tile-index">07</span><span class="emoji">🧰</span><div><div class="tile-name">Treasure Chest</div><div class="tile-note">Draw a bonus card</div></div></div>
+          <div class="tile step" data-category="STEP BACK"><span class="tile-index">08</span><span class="emoji">↩️</span><div><div class="tile-name">Step Back</div><div class="tile-note">Move back on the board</div></div></div>
+          <div class="tile start" data-category="FINISH"><span class="tile-index">09</span><span class="emoji">🏁</span><div><div class="tile-name">Finish</div><div class="tile-note">Budget check</div></div></div>
+        </div>
+        <div class="board-legend">
+          <span class="legend-item"><i class="dot" style="--c:#43815d"></i> Needs</span>
+          <span class="legend-item"><i class="dot" style="--c:#9a70ba"></i> Wants</span>
+          <span class="legend-item"><i class="dot" style="--c:#d9a72c"></i> Special space</span>
+        </div>
+        <div class="control-grid">
+          <div><label for="playerSelect">Current player</label><select id="playerSelect"></select></div>
+          <div><label for="landSelect">Landed on</label><select id="landSelect">
+            <option>GOING TO SCHOOL</option><option>FOODS</option><option>GOING HOME</option><option>WATER/DRINKS</option><option>AFTER CLASS GALA</option><option>SCHOOL MATERIALS</option><option>TREASURE CHEST</option><option>STEP BACK</option><option>FINISH</option>
+          </select></div>
+        </div>
+        <div class="dice-row"><div class="die" id="die1">⚀</div><div class="die" id="die2">⚀</div><strong class="roll-total" id="rollTotal">Ready to roll</strong></div>
+        <div class="control-buttons">
+          <button class="btn btn-gold" id="rollBtn">🎲 Roll dice</button>
+          <button class="btn btn-dark" id="landBtn">Use selected space</button>
+        </div>
+        <div class="notice"><strong>How to use:</strong> The floor board is played in person. This website is your live budget screen: use “Roll dice” for a random roll, choose the actual space where the player lands, then record the revealed amount on the right.</div>
+      </div>
+    </div>
+
+    <div class="right-column">
+      <div class="panel" id="recordPanel">
+        <div class="section-head"><h2>Reveal an expense</h2><span class="pill">Live ledger</span></div>
+        <div class="transaction-form">
+          <div><label for="expensePlayer">Person</label><select id="expensePlayer"></select></div>
+          <div><label for="expenseCategory">Category</label><select id="expenseCategory">
+            <option>GOING TO SCHOOL</option><option>FOODS</option><option>WATER/DRINKS</option><option>AFTER CLASS GALA</option><option>GOING HOME</option><option>SCHOOL MATERIALS</option>
+          </select></div>
+          <div><label for="expenseAmount">Expense amount (₱)</label><div class="money-input"><span>₱</span><input id="expenseAmount" type="number" min="0" step="1" placeholder="e.g. 45"></div></div>
+          <div><label for="expenseNote">Note (optional)</label><input id="expenseNote" type="text" placeholder="e.g. jeepney fare"></div>
+          <div class="wide"><button class="btn btn-red" id="deductBtn" style="width:100%">💸 Reveal & deduct expense</button></div>
+          <div class="wide"><label for="bonusAmount">Bonus / Treasure Chest (₱)</label><div style="display:flex;gap:8px"><input id="bonusAmount" type="number" min="0" placeholder="e.g. 50"><button class="btn btn-gold" id="bonusBtn">🎁 Add bonus</button></div></div>
+        </div>
+        <p class="small-muted" style="margin:12px 0 0">The expense will appear in the activity ledger and be deducted from the single shared ₱2,600 budget. If it exceeds the available balance, it will be blocked.</p>
+      </div>
+
+      <div class="panel">
+        <div class="section-head"><h2>Expense reveal</h2><span class="pill" id="ledgerPill">0 entries</span></div>
+        <div id="ledger" class="ledger"><div class="empty">No expenses revealed yet.<br>Record a transaction to see it appear here.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:20px">
+    <div class="section-head"><h2>Class expense report</h2><span class="pill">8 respondents</span></div>
+    <p class="sub" style="margin-bottom:15px">Your provided survey data, displayed as a reference table. This table does not automatically change when you record live game transactions.</p>
+    <div class="table-tools"><button class="btn btn-dark" id="showSummaryBtn">Show category summary</button><button class="btn btn-light" id="showPeopleBtn">Show each person's expenses</button></div>
+    <div class="table-wrap" id="reportTable"></div>
+  </section>
+  <div class="footer">MONEY MOVES · Student Budget Monopoly · Financial literacy through play</div>
+</main>
+
+<div class="toast" id="toast"></div>
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="big-icon" id="modalIcon">💸</div>
+    <div class="eyebrow" id="modalEyebrow">Expense revealed</div>
+    <h2 id="modalTitle">FOODS</h2>
+    <div class="revealed-amount" id="modalAmount">−₱50</div>
+    <p id="modalDescription">Clark spent ₱50 on foods.</p>
+    <button class="btn btn-dark" id="modalClose">Got it!</button>
+  </div>
+</div>
+<script>
+(() => {
+  const START_BUDGET = 2600;
+  const people = ["CLARK","ZED","KIM","CJ","SHER","ANDREA","GIAN","KEVIN"];
+  const categories = ["GOING TO SCHOOL","FOODS","WATER/DRINKS","AFTER CLASS GALA","GOING HOME","SCHOOL MATERIALS"];
+  const categoryIcons = {"GOING TO SCHOOL":"🚌","FOODS":"🍱","WATER/DRINKS":"🥤","AFTER CLASS GALA":"🎡","GOING HOME":"🏠","SCHOOL MATERIALS":"✏️","TREASURE CHEST":"🧰","STEP BACK":"↩️","FINISH":"🏁"};
+  const personData = [
+    {name:"CLARK",values:[45,99,15,0,55,0]},
+    {name:"ZED",values:[65,100,0,0,65,0]},
+    {name:"KIM",values:[0,150,0,0,0,0]},
+    {name:"CJ",values:[60,365,0,0,13,0]},
+    {name:"SHER",values:[0,150,50,0,20,0]},
+    {name:"ANDREA",values:[187,99,50,60,97,100]},
+    {name:"GIAN",values:[68,250,0,60,68,100]},
+    {name:"KEVIN",values:[45,99,15,0,45,0]}
+  ];
+  const summaryData = [
+    {category:"GOING TO SCHOOL",people:"6/8",frequency:"18%",total:470,average:"₱58.75",priority:"NEEDS",respondents:"1/8",priorityPct:"12.50%"},
+    {category:"FOODS",people:"8/8",frequency:"50%",total:1312,average:"₱164.00",priority:"NEEDS",respondents:"7/8",priorityPct:"87.50%"},
+    {category:"GOING HOME",people:"7/8",frequency:"13.96%",total:363,average:"₱45.38",priority:"NEEDS",respondents:"3/8",priorityPct:"37.50%"},
+    {category:"WATER/DRINKS",people:"4/8",frequency:"5%",total:130,average:"₱16.25",priority:"NEEDS",respondents:"2/8",priorityPct:"25%"},
+    {category:"AFTER CLASS GALA",people:"2/8",frequency:"5%",total:120,average:"₱15.00",priority:"WANTS",respondents:"2/8",priorityPct:"25%"},
+    {category:"SCHOOL MATERIALS",people:"2/8",frequency:"8%",total:200,average:"₱25.00",priority:"NEEDS",respondents:"2/8",priorityPct:"25%"}
+  ];
+  let balance = START_BUDGET, totalSpent = 0, bonusTotal = 0, transactions = [], soundOn = true, lastRoll = [1,1], reportMode = "summary", audioCtx;
+  const $ = id => document.getElementById(id);
+  const money = n => "₱" + Number(n).toLocaleString("en-PH",{maximumFractionDigits:2});
+  const escapeHTML = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  function fillPlayers(){
+    ["playerSelect","expensePlayer"].forEach(id=>{ $(id).innerHTML=people.map(p=>`<option>${p}</option>`).join(""); });
+  }
+  function playTone(type="coin"){
+    if(!soundOn) return;
+    try{
+      audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+      if(audioCtx.state==="suspended") audioCtx.resume();
+      const now=audioCtx.currentTime;
+      const notes= type==="win" ? [523,659,784,1046] : type==="bonus" ? [660,880,990] : type==="dice" ? [240,320] : [620,820];
+      notes.forEach((freq,i)=>{
+        const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
+        osc.type=type==="expense"?"triangle":"sine"; osc.frequency.setValueAtTime(freq,now+i*.09);
+        gain.gain.setValueAtTime(.0001,now+i*.09);gain.gain.exponentialRampToValueAtTime(.12,now+i*.09+.02);gain.gain.exponentialRampToValueAtTime(.0001,now+i*.09+.16);
+        osc.connect(gain);gain.connect(audioCtx.destination);osc.start(now+i*.09);osc.stop(now+i*.09+.18);
+      });
+    }catch(e){}
+  }
+  function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),2500);}
+  function confetti(){
+    const shapes=["■","●","✦","◆"];
+    for(let i=0;i<70;i++){
+      const el=document.createElement("div");el.className="confetti";el.textContent=shapes[Math.floor(Math.random()*shapes.length)];
+      el.style.left=Math.random()*100+"vw";el.style.color=["#e7b844","#e05d4d","#2c8757","#568ac1","#a477c2"][Math.floor(Math.random()*5)];
+      el.style.fontSize=(9+Math.random()*10)+"px";el.style.animationDelay=(Math.random()*.7)+"s";el.style.animationDuration=(1.7+Math.random()*1.6)+"s";
+      document.body.appendChild(el);setTimeout(()=>el.remove(),4000);
+    }
+  }
+  function updateStats(){
+    $("balance").textContent=money(balance);$("spent").textContent=money(totalSpent);
+    $("transactionCount").textContent=transactions.length;$("usedPercent").textContent=Math.round(totalSpent/START_BUDGET*100)+"%";
+    $("ledgerPill").textContent=transactions.length+" entr"+(transactions.length===1?"y":"ies");
+  }
+  function renderLedger(){
+    const el=$("ledger");
+    if(!transactions.length){el.innerHTML='<div class="empty">No expenses revealed yet.<br>Record a transaction to see it appear here.</div>';return;}
+    el.innerHTML=[...transactions].reverse().map(t=>`<div class="ledger-item ${t.type==="bonus"?"bonus":""}">
+      <div><div class="who">${t.type==="bonus"?"🎁 "+escapeHTML(t.person)+" · TREASURE CHEST":(categoryIcons[t.category]||"💸")+" "+escapeHTML(t.person)}</div>
+      <div class="detail">${escapeHTML(t.category)}${t.note?" · "+escapeHTML(t.note):""} · ${escapeHTML(t.time)}</div></div>
+      <div class="amt">${t.type==="bonus"?"+":"−"}${money(t.amount)}</div>
+    </div>`).join("");
+  }
+  function reveal({icon="💸",eyebrow="Expense revealed",title,amount,description,bonus=false}){
+    $("modalIcon").textContent=icon;$("modalEyebrow").textContent=eyebrow;$("modalTitle").textContent=title;
+    $("modalAmount").textContent=(bonus?"+":"−")+money(amount);
+    $("modalAmount").style.color=bonus?"#247b4c":"var(--red)";
+    $("modalDescription").textContent=description;$("modalBackdrop").classList.add("show");
+  }
+  function deduct(){
+    const person=$("expensePlayer").value, category=$("expenseCategory").value, raw=$("expenseAmount").value, amount=Number(raw), note=$("expenseNote").value.trim();
+    if(raw===""||!Number.isFinite(amount)||amount<0){toast("Enter a valid expense amount.");return;}
+    if(amount>balance){toast("Not enough money in the shared budget!");playTone("expense");return;}
+    if(amount===0){toast("₱0 recorded — no money deducted.");}
+    balance-=amount;totalSpent+=amount;
+    transactions.push({type:"expense",person,category,amount,note,time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})});
+    updateStats();renderLedger();playTone("expense");
+    reveal({icon:categoryIcons[category]||"💸",title:category,amount,description:`${person} spent ${money(amount)} on ${category.toLowerCase()}.${note?" Note: "+note:""} ${money(balance)} remains in the shared wallet.`});
+    $("expenseAmount").value="";$("expenseNote").value="";
+    if(balance===0){confetti();toast("The shared budget has reached ₱0!");}
+  }
+  function addBonus(){
+    const raw=$("bonusAmount").value, amount=Number(raw), person=$("expensePlayer").value;
+    if(raw===""||!Number.isFinite(amount)||amount<=0){toast("Enter a bonus greater than ₱0.");return;}
+    balance+=amount;bonusTotal+=amount;
+    transactions.push({type:"bonus",person,category:"TREASURE CHEST",amount,note:"Bonus added to shared wallet",time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})});
+    updateStats();renderLedger();playTone("bonus");confetti();
+    reveal({icon:"🎁",eyebrow:"Treasure Chest bonus",title:"BONUS UNLOCKED!",amount,bonus:true,description:`${person} found a bonus of ${money(amount)}! The shared budget is now ${money(balance)}.`});
+    $("bonusAmount").value="";
+  }
+  const diceFaces=["⚀","⚁","⚂","⚃","⚄","⚅"];
+  function rollDice(){
+    lastRoll=[1+Math.floor(Math.random()*6),1+Math.floor(Math.random()*6)];
+    $("die1").textContent=diceFaces[lastRoll[0]-1];$("die2").textContent=diceFaces[lastRoll[1]-1];
+    $("rollTotal").textContent=`Rolled ${lastRoll[0]} + ${lastRoll[1]} = ${lastRoll[0]+lastRoll[1]}`;
+    playTone("dice");toast(`${$("playerSelect").value} rolled ${lastRoll[0]+lastRoll[1]}!`);
+  }
+  function useSpace(){
+    const selected=$("landSelect").value;
+    document.querySelectorAll(".tile").forEach(t=>t.classList.toggle("active",t.dataset.category===selected));
+    if(categories.includes(selected)){
+      $("expensePlayer").value=$("playerSelect").value;$("expenseCategory").value=selected;
+      $("recordPanel").scrollIntoView({behavior:"smooth",block:"center"});
+      $("expenseAmount").focus();toast(`${selected}: complete your challenge, reveal the card, then enter the amount.`);
+    }else if(selected==="TREASURE CHEST"){
+      $("expensePlayer").value=$("playerSelect").value;$("bonusAmount").focus();toast("Treasure Chest! Draw a card and enter the bonus amount.");
+    }else if(selected==="STEP BACK"){
+      toast("Step Back! Move your token backward on the physical board.");
+    }else{
+      confetti();playTone("win");toast("Finish reached! Check the remaining budget.");
+    }
+  }
+  function renderReport(mode){
+    reportMode=mode;
+    if(mode==="people"){
+      const head=`<thead><tr><th>Person</th>${categories.map(c=>`<th>${escapeHTML(c)}</th>`).join("")}<th>Total</th></tr></thead>`;
+      const rows=personData.map(p=>`<tr><td><strong>${p.name}</strong></td>${p.values.map(v=>`<td>${money(v)}</td>`).join("")}<td><strong>${money(p.values.reduce((a,b)=>a+b,0))}</strong></td></tr>`).join("");
+      const totals=categories.map((c,i)=>personData.reduce((s,p)=>s+p.values[i],0));
+      $("reportTable").innerHTML=`<table>${head}<tbody>${rows}</tbody><tfoot><tr><td>TOTAL</td>${totals.map(v=>`<td>${money(v)}</td>`).join("")}<td>${money(totals.reduce((a,b)=>a+b,0))}</td></tr></tfoot></table>`;
+    }else{
+      const rows=summaryData.map(d=>`<tr><td><strong>${d.category}</strong></td><td>${d.people}</td><td>${d.frequency}</td><td>${money(d.total)}</td><td>${d.average}</td><td>${d.priority}</td><td>${d.respondents}</td><td>${d.priorityPct}</td></tr>`).join("");
+      $("reportTable").innerHTML=`<table><thead><tr><th>Most common expenses / Category</th><th>No. of person</th><th>Percentage</th><th>Total expenses</th><th>Average amount spent</th><th>Spending priority</th><th>Number of respondents</th><th>Priority percentage</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td>TOTAL</td><td>—</td><td>99.96%*</td><td>${money(2595)}</td><td>${money(324.38)}</td><td>—</td><td>—</td><td>—</td></tr></tfoot></table><p class="small-muted" style="padding:8px 3px">*Values are shown as supplied in your table. Some source percentages / counts may not add up exactly due to rounding or the original survey calculations.</p>`;
+    }
+  }
+  function exportCSV(){
+    const rows=[["Type","Person","Category","Amount (PHP)","Note","Time"],...transactions.map(t=>[t.type,t.person,t.category,t.amount,t.note,t.time])];
+    const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
+    const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download="money-moves-transactions.csv";a.click();URL.revokeObjectURL(url);toast("Transaction CSV exported.");
+  }
+  function resetGame(){
+    if(!confirm("Reset the game and clear all live transactions?"))return;
+    balance=START_BUDGET;totalSpent=0;bonusTotal=0;transactions=[];updateStats();renderLedger();
+    document.querySelectorAll(".tile").forEach(t=>t.classList.remove("active"));
+    $("die1").textContent="⚀";$("die2").textContent="⚀";$("rollTotal").textContent="Ready to roll";
+    toast("Game reset. Shared budget restored to ₱2,600.");
+  }
+  fillPlayers();updateStats();renderLedger();renderReport("summary");
+  $("deductBtn").addEventListener("click",deduct);$("bonusBtn").addEventListener("click",addBonus);
+  $("rollBtn").addEventListener("click",rollDice);$("landBtn").addEventListener("click",useSpace);
+  $("modalClose").addEventListener("click",()=>$("modalBackdrop").classList.remove("show"));
+  $("modalBackdrop").addEventListener("click",e=>{if(e.target===$("modalBackdrop"))$("modalBackdrop").classList.remove("show");});
+  $("resetBtn").addEventListener("click",resetGame);$("exportBtn").addEventListener("click",exportCSV);
+  $("showSummaryBtn").addEventListener("click",()=>renderReport("summary"));$("showPeopleBtn").addEventListener("click",()=>renderReport("people"));
+  $("soundToggle").addEventListener("click",()=>{soundOn=!soundOn;$("soundToggle").textContent=soundOn?"🔊 Sound on":"🔇 Sound off";if(soundOn)playTone("coin");});
+})();
+</script>
+</body>
+</html>
+'''
+path = Path("/mnt/data/money_moves_monopoly.html")
+path.write_text(html, encoding="utf-8")
+print(f"Created {path} ({path.stat().st_size:,} bytes)")
